@@ -40,8 +40,13 @@ def check_integrity() -> bool:
         return False
 
 def check_originfiles() -> bool:
-    with open("file_lists/origin.txt", "r") as file_origin:
-        file_list_origin = [line.strip() for line in file_origin]
+    try:
+        with open("file_lists/origin.txt", "r") as file_origin:
+            file_list_origin = [line.strip() for line in file_origin]
+    except:
+        print("Backend integrity check failed.", end=" ")
+        return False
+    
     if (set(file_list_origin).issubset(set(os.listdir("..")))):
         print("Backend integrity check passed.", end=" ")
         return True
