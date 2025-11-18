@@ -39,3 +39,29 @@ def container_list(_: str = Depends(require_auth)):
             "ports": attrs.get("NetworkSettings", {}).get("Ports"),
         })
     return jsonable_encoder(summary)
+
+@api_router.get("/cli/images/list/info")
+def image_info(_: str = Depends(require_auth)):
+    images = [image.attrs for image in cli.images.list()]
+    return jsonable_encoder(images)
+
+@api_router.get("/cli/images/list")
+def image_list(_: str = Depends(require_auth)):
+    summary = []
+    for image in cli.images.list():
+        attrs = image.attrs
+        # For some image you commit by yourself without name
+        repo_tag = (attrs.get("RepoTags") or ["<none>:<none>"])[0]
+        # For the case `:` is in the name
+        if ":" in repo_tag:
+            repository, tag = repo_tag.rsplit(":", 1)
+        else:
+            repository, tag = repo_tag, ""
+        summary.append({
+            "repository": repository,
+            "tag": tag,
+            "id": attrs.get("Id"),
+            "created": attrs.get("Created"),
+            "size": attrs.get("Size"),
+        })
+    return jsonable_encoder(summary)
