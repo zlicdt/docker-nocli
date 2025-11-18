@@ -54,8 +54,8 @@ def _hash_token(token: str, salt: str) -> str:
 def upsert_credentials(username: str, password: str) -> None:
     salt = secrets.token_hex(16)
     password_hash = _hash_password(password, salt)
-    with connect_sqlite() as conn:
-        conn.execute(
+    with connect_sqlite() as connection:
+        connection.execute(
             """
             INSERT INTO credentials (id, username, password_hash, salt)
             VALUES (1, ?, ?, ?)
@@ -67,12 +67,12 @@ def upsert_credentials(username: str, password: str) -> None:
             """,
             (username, password_hash, salt),
         )
-        conn.commit()
+        connection.commit()
 
 
 def get_credentials() -> Optional[sqlite3.Row]:
-    with connect_sqlite() as conn:
-        row = conn.execute(
+    with connect_sqlite() as connection:
+        row = connection.execute(
             "SELECT username, password_hash, salt FROM credentials WHERE id = 1"
         ).fetchone()
     return row
@@ -103,18 +103,18 @@ def issue_token(username: str, password: str) -> Optional[str]:
 def _store_token(token: str) -> None:
     salt = secrets.token_hex(16)
     token_hash = _hash_token(token, salt)
-    with connect_sqlite() as conn:
-        conn.execute("DELETE FROM tokens")
-        conn.execute(
+    with connect_sqlite() as connection:
+        connection.execute("DELETE FROM tokens")
+        connection.execute(
             "INSERT INTO tokens (token_hash, salt) VALUES (?, ?)",
             (token_hash, salt),
         )
-        conn.commit()
+        connection.commit()
 
 
 def verify_token(token: str) -> bool:
-    with connect_sqlite() as conn:
-        rows = conn.execute("SELECT token_hash, salt FROM tokens").fetchall()
+    with connect_sqlite() as connection:
+        rows = connection.execute("SELECT token_hash, salt FROM tokens").fetchall()
     for row in rows:
         candidate = _hash_token(token, row["salt"])
         if secrets.compare_digest(candidate, row["token_hash"]):
