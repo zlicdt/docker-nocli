@@ -1,4 +1,5 @@
 import os
+import docker
 from pathlib import Path
 
 def check_integrity() -> bool:
@@ -8,6 +9,7 @@ def check_integrity() -> bool:
     funcs_list = [
         check_originfiles,
         check_venv,
+        check_docker_env,
     ]
 
     passed = 0
@@ -61,6 +63,15 @@ def check_venv() -> bool:
             return True
     print("Venv check failed.", end=" ")
     return False
+
+def check_docker_env() -> bool:
+    try:
+        docker.client.from_env()
+        print("Docker environment check passed.", end=" ")
+        return True
+    except:
+        print("Docker environment check failed.", end=" ")
+        return False
 
 if __name__ == "__main__":
     check_integrity()
