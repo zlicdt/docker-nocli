@@ -1,4 +1,5 @@
 import os
+import sys
 import docker
 from pathlib import Path
 
@@ -74,4 +75,4 @@ def check_docker_env() -> bool:
         return False
 
 if __name__ == "__main__":
-    check_integrity()
+    sys.exit(0 if check_integrity() else 1)
