@@ -1,12 +1,26 @@
-from fastapi import APIRouter, Depends
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+)
 from fastapi.encoders import jsonable_encoder
 
 from dockerutil import utils
 from .dependencies import require_auth
+from services.image_service import (
+    ImageDeleteError,
+    ImageInUseError,
+    ImageNotFoundError,
+    delete_image as service_delete_image,
+    list_images_summary,
+)
 
 api_router = APIRouter()
 cli = utils.init()
-
+"""
+(_: str = Depends(require_auth)) equals to `require auth`
+"""
 
 @api_router.get("/status")
 def status():
@@ -45,23 +59,24 @@ def image_info(_: str = Depends(require_auth)):
     images = [image.attrs for image in cli.images.list()]
     return jsonable_encoder(images)
 
+"""
+The image services is included in `services/image_service.py`,
+but others have not done yet. 
+"""
+
 @api_router.get("/cli/images/list")
 def image_list(_: str = Depends(require_auth)):
-    summary = []
-    for image in cli.images.list():
-        attrs = image.attrs
-        # For some image you commit by yourself without name
-        repo_tag = (attrs.get("RepoTags") or ["<none>:<none>"])[0]
-        # For the case `:` is in the name
-        if ":" in repo_tag:
-            repository, tag = repo_tag.rsplit(":", 1)
-        else:
-            repository, tag = repo_tag, ""
-        summary.append({
-            "repository": repository,
-            "tag": tag,
-            "id": attrs.get("Id"),
-            "created": attrs.get("Created"),
-            "size": attrs.get("Size"),
-        })
-    return jsonable_encoder(summary)
+    return jsonable_encoder(list_images_summary(cli))
+
+
+@api_router.delete("/cli/images/{image_id}")
+def delete_image(image_id: str, _: str = Depends(require_auth)):
+    try:
+        service_delete_image(cli, image_id)
+    except ImageNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except ImageInUseError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    except ImageDeleteError as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+    return {"status": "deleted", "id": image_id}
