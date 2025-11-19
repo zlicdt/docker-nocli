@@ -5,9 +5,15 @@ from fastapi import (
     status,
 )
 from fastapi.encoders import jsonable_encoder
-
 from dockerutil import utils
 from .dependencies import require_auth
+from services.container_service import (
+    ContainerDeleteError,
+    ContainerInUseError,
+    ContainerNotFoundError,
+    delete_container as service_delete_container,
+    list_containers_summary,
+)
 from services.image_service import (
     ImageDeleteError,
     ImageInUseError,
@@ -20,6 +26,8 @@ api_router = APIRouter()
 cli = utils.init()
 """
 (_: str = Depends(require_auth)) equals to `require auth`
+
+Image and container services live under `services/` to keep Docker logic reusable.
 """
 
 @api_router.get("/status")
@@ -40,29 +48,26 @@ def container_info(_: str = Depends(require_auth)):
 
 @api_router.get("/cli/containers/list")
 def container_list(_: str = Depends(require_auth)):
-    summary = []
-    for container in cli.containers.list():
-        attrs = container.attrs
-        summary.append({
-            "id": attrs.get("Id"),
-            "image": attrs.get("Config", {}).get("Image"),
-            "command": attrs.get("Config", {}).get("Cmd"),
-            "name": attrs.get("Name", "").lstrip("/"),
-            "created": attrs.get("Created"),
-            "status": attrs.get("State", {}).get("Status"),
-            "ports": attrs.get("NetworkSettings", {}).get("Ports"),
-        })
-    return jsonable_encoder(summary)
+    return jsonable_encoder(list_containers_summary(cli))
+
+
+@api_router.delete("/cli/containers/{container_id}")
+def delete_container_route(container_id: str, _: str = Depends(require_auth)):
+    try:
+        service_delete_container(cli, container_id)
+    except ContainerNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except ContainerInUseError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    except ContainerDeleteError as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+    return {"status": "deleted", "id": container_id}
+
 
 @api_router.get("/cli/images/list/info")
 def image_info(_: str = Depends(require_auth)):
     images = [image.attrs for image in cli.images.list()]
     return jsonable_encoder(images)
-
-"""
-The image services is included in `services/image_service.py`,
-but others have not done yet. 
-"""
 
 @api_router.get("/cli/images/list")
 def image_list(_: str = Depends(require_auth)):
