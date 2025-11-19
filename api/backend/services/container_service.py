@@ -19,6 +19,10 @@ class ContainerDeleteError(ContainerServiceError):
     """Raised for other container delete failures."""
 
 
+class ContainerStopError(ContainerServiceError):
+    """Raised when a container cannot be stopped."""
+
+
 def list_containers_summary(cli) -> List[Dict[str, Any]]:
     """Return a summary of containers with selected fields."""
     summary = []
@@ -49,3 +53,16 @@ def delete_container(cli, container_id: str):
         if getattr(exc, "status_code", None) == 409:
             raise ContainerInUseError(exc.explanation or "Container is running") from exc
         raise ContainerDeleteError(exc.explanation or "Failed to delete container") from exc
+
+
+def stop_container(cli, container_id: str):
+    """Stop a container by id while normalizing errors."""
+    try:
+        container = cli.containers.get(container_id)
+    except NotFound as exc:
+        raise ContainerNotFoundError(f"Container {container_id} not found") from exc
+
+    try:
+        container.stop()
+    except APIError as exc:
+        raise ContainerStopError(exc.explanation or "Failed to stop container") from exc

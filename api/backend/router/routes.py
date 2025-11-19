@@ -11,8 +11,10 @@ from services.container_service import (
     ContainerDeleteError,
     ContainerInUseError,
     ContainerNotFoundError,
+    ContainerStopError,
     delete_container as service_delete_container,
     list_containers_summary,
+    stop_container as service_stop_container,
 )
 from services.image_service import (
     ImageDeleteError,
@@ -51,6 +53,17 @@ def container_list(_: str = Depends(require_auth)):
     return jsonable_encoder(list_containers_summary(cli))
 
 
+@api_router.post("/cli/containers/{container_id}/stop")
+def stop_container_route(container_id: str, _: str = Depends(require_auth)):
+    try:
+        service_stop_container(cli, container_id)
+    except ContainerNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except ContainerStopError as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+    return {"status": "stopped", "id": container_id}
+
+
 @api_router.delete("/cli/containers/{container_id}")
 def delete_container_route(container_id: str, _: str = Depends(require_auth)):
     try:
@@ -62,7 +75,6 @@ def delete_container_route(container_id: str, _: str = Depends(require_auth)):
     except ContainerDeleteError as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
     return {"status": "deleted", "id": container_id}
-
 
 @api_router.get("/cli/images/list/info")
 def image_info(_: str = Depends(require_auth)):

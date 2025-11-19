@@ -39,7 +39,7 @@ def list_images_summary(cli) -> List[Dict[str, Any]]:
     return summary
 
 
-def delete_image(cli, image_id: str) -> None:
+def delete_image(cli, image_id: str):
     """Delete an image by id and normalize errors."""
     try:
         cli.images.remove(image_id)
