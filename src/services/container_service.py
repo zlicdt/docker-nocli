@@ -30,7 +30,7 @@ class ContainerStartError(ContainerServiceError):
 def list_containers_summary(cli) -> List[Dict[str, Any]]:
     """Return a summary of containers with selected fields."""
     summary = []
-    for container in cli.containers.list():
+    for container in cli.containers.list(all=True):
         attrs = container.attrs
         summary.append({
             "id": attrs.get("Id"),
