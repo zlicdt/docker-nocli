@@ -8,7 +8,7 @@ def check_integrity() -> bool:
     os.chdir(Path(__file__).resolve().parent)
     # Add test functions here!
     funcs_list = [
-        check_originfiles,
+        check_origindirs,
         check_venv,
         check_docker_env,
     ]
@@ -42,7 +42,7 @@ def check_integrity() -> bool:
     else:
         return False
 
-def check_originfiles() -> bool:
+def check_origindirs() -> bool:
     try:
         with open("file_lists/origin.txt", "r") as file_origin:
             file_list_origin = [line.strip() for line in file_origin]
@@ -58,7 +58,7 @@ def check_originfiles() -> bool:
         return False
 
 def check_venv() -> bool:
-    for item in os.listdir(".."):
+    for item in os.listdir("../.."):
         if (item == ".venv"):
             print("Venv check passed(I don't know if you actually created it).", end=" ")
             return True
