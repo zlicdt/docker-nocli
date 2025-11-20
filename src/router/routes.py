@@ -11,9 +11,11 @@ from services.container_service import (
     ContainerDeleteError,
     ContainerInUseError,
     ContainerNotFoundError,
+    ContainerStartError,
     ContainerStopError,
     delete_container as service_delete_container,
     list_containers_summary,
+    start_container as service_start_container,
     stop_container as service_stop_container,
 )
 from services.image_service import (
@@ -51,6 +53,17 @@ def container_info(_: str = Depends(require_auth)):
 @api_router.get("/cli/containers/list")
 def container_list(_: str = Depends(require_auth)):
     return jsonable_encoder(list_containers_summary(cli))
+
+
+@api_router.post("/cli/containers/{container_id}/start")
+def start_container_route(container_id: str, _: str = Depends(require_auth)):
+    try:
+        service_start_container(cli, container_id)
+    except ContainerNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except ContainerStartError as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+    return {"status": "started", "id": container_id}
 
 
 @api_router.post("/cli/containers/{container_id}/stop")

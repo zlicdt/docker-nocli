@@ -23,6 +23,10 @@ class ContainerStopError(ContainerServiceError):
     """Raised when a container cannot be stopped."""
 
 
+class ContainerStartError(ContainerServiceError):
+    """Raised when a container cannot be started."""
+
+
 def list_containers_summary(cli) -> List[Dict[str, Any]]:
     """Return a summary of containers with selected fields."""
     summary = []
@@ -40,7 +44,7 @@ def list_containers_summary(cli) -> List[Dict[str, Any]]:
     return summary
 
 
-def delete_container(cli, container_id: str):
+def delete_container(cli, container_id: str) -> None:
     """Delete a container by id and normalize Docker errors."""
     try:
         container = cli.containers.get(container_id)
@@ -55,7 +59,7 @@ def delete_container(cli, container_id: str):
         raise ContainerDeleteError(exc.explanation or "Failed to delete container") from exc
 
 
-def stop_container(cli, container_id: str):
+def stop_container(cli, container_id: str) -> None:
     """Stop a container by id while normalizing errors."""
     try:
         container = cli.containers.get(container_id)
@@ -66,3 +70,16 @@ def stop_container(cli, container_id: str):
         container.stop()
     except APIError as exc:
         raise ContainerStopError(exc.explanation or "Failed to stop container") from exc
+
+
+def start_container(cli, container_id: str) -> None:
+    """Start a container by id while normalizing errors."""
+    try:
+        container = cli.containers.get(container_id)
+    except NotFound as exc:
+        raise ContainerNotFoundError(f"Container {container_id} not found") from exc
+
+    try:
+        container.start()
+    except APIError as exc:
+        raise ContainerStartError(exc.explanation or "Failed to start container") from exc
