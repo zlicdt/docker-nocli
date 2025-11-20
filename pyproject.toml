@@ -1,5 +1,5 @@
 [project]
-name = "backend"
+name = "docker-nocli"
 version = "0.1.1"
 description = "The backend of docker-nocli"
 readme = ""
