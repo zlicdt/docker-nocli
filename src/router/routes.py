@@ -7,6 +7,7 @@ from fastapi import (
 from fastapi.encoders import jsonable_encoder
 from dockerutil import utils
 from .dependencies import require_auth
+from .auth import get_credentials
 from services.container_service import (
     ContainerDeleteError,
     ContainerInUseError,
@@ -36,7 +37,12 @@ Image and container services live under `services/` to keep Docker logic reusabl
 
 @api_router.get("/status")
 def status():
-    return {"status": "online"}
+    user_status = True if (get_credentials() is not None) else False
+    status = {
+        "status": "online",
+        "user_exist": user_status,
+    }
+    return jsonable_encoder(status)
 
 
 @api_router.get("/cli/info")
