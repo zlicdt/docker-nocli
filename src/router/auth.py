@@ -100,6 +100,18 @@ def issue_token(username: str, password: str) -> Optional[str]:
     return token
 
 
+def create_credentials_if_absent(username: str, password: str) -> bool:
+    """
+    Create initial credentials only if none exist.
+
+    Returns True when credentials were stored, False if they already exist.
+    """
+    if get_credentials() is not None:
+        return False
+    upsert_credentials(username, password)
+    return True
+
+
 def _store_token(token: str) -> None:
     salt = secrets.token_hex(16)
     token_hash = _hash_token(token, salt)

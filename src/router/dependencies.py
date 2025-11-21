@@ -23,6 +23,21 @@ def issue_token(payload: TokenRequest):
         )
     return {"token": token}
 
+class SetupRequest(BaseModel):
+    username: str
+    password: str
+
+
+@auth_router.post("/auth/setup")
+def setup_credentials(payload: SetupRequest):
+    created = auth.create_credentials_if_absent(payload.username, payload.password)
+    if not created:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Credentials already exist",
+        )
+    return {"status": "created"}
+
 
 def require_auth(
     credentials: HTTPAuthorizationCredentials = Depends(security),
