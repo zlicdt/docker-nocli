@@ -26,6 +26,7 @@ from services.image_service import (
     delete_image as service_delete_image,
     list_images_summary,
 )
+from services.network_service import list_networks_summary
 
 api_router = APIRouter()
 cli = utils.init()
@@ -116,3 +117,14 @@ def delete_image(image_id: str, _: str = Depends(require_auth)):
     except ImageDeleteError as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
     return {"status": "deleted", "id": image_id}
+
+
+@api_router.get("/cli/networks/list/info")
+def network_info(_: str = Depends(require_auth)):
+    networks = [network.attrs for network in cli.networks.list()]
+    return jsonable_encoder(networks)
+
+
+@api_router.get("/cli/networks/list")
+def network_list(_: str = Depends(require_auth)):
+    return jsonable_encoder(list_networks_summary(cli))
